@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>0vuln Range – a hacking lab in your browser</title>
+<meta name="description" content="A safe, simulated hacking lab that runs entirely in your browser. Capture the flags, then download your session as a .pcap and analyze it from the defender’s side.">
+<style>
+:root{--bg:#0a0f0a;--fg:#33ff66;--dim:#1c8f3c;--amb:#ffb000;--red:#ff5555}
+*{box-sizing:border-box}html,body{height:100%}
+body{margin:0 auto;background:var(--bg);color:var(--fg);font:15px/1.45 "Courier New",monospace;display:flex;flex-direction:column;padding:12px;max-width:960px}
+#t{flex:1;overflow-y:auto;white-space:pre-wrap;word-break:break-word}
+.c{color:var(--amb)}.e{color:var(--red)}.d{color:var(--dim)}.g{font-weight:bold}
+#l{display:flex;gap:8px;border-top:1px solid var(--dim);padding-top:8px}
+#i{flex:1;min-width:0;background:none;border:0;outline:0;color:var(--fg);font:inherit}
+</style></head><body>
+<div id="t"></div>
+<div id="l"><span id="p"></span><input id="i" autocomplete="off" autocapitalize="off" spellcheck="false" autofocus></div>
+<script>
+//NET-START
+const A='10.0.0.5',T='10.0.0.9',P=[];let clock=0;const T0=Math.floor(Date.now()/1000);
+const ipb=s=>s.split('.').map(Number);
+function pkt(s,d,sp,dp,fl,pl=''){
+  clock+=0.002+Math.random()*0.01;
+  const x=new TextEncoder().encode(pl),b=new Uint8Array(54+x.length),v=new DataView(b.buffer);
+  b.set([2,2,2,2,2,2,4,4,4,4,4,4],0);v.setUint16(12,0x800);
+  b[14]=0x45;v.setUint16(16,40+x.length);b[22]=64;b[23]=6;b.set(ipb(s),26);b.set(ipb(d),30);
+  v.setUint16(34,sp);v.setUint16(36,dp);b[46]=0x50;b[47]=fl;v.setUint16(48,8192);b.set(x,54);
+  P.push({t:T0+clock,b});
+}
+function sess(dp,ex){
+  const sp=40000+Math.floor(Math.random()*20000);
+  pkt(A,T,sp,dp,2);pkt(T,A,dp,sp,0x12);pkt(A,T,sp,dp,0x10);
+  for(const[w,x]of ex)w==='c'?pkt(A,T,sp,dp,0x18,x):pkt(T,A,dp,sp,0x18,x);
+  pkt(A,T,sp,dp,0x11);
+}
+function pcap(){
+  const o=new Uint8Array(P.reduce((a,p)=>a+16+p.b.length,24)),v=new DataView(o.buffer);
+  v.setUint32(0,0xa1b2c3d4,true);v.setUint16(4,2,true);v.setUint16(6,4,true);v.setUint32(16,65535,true);v.setUint32(20,1,true);
+  let k=24;for(const p of P){const s=Math.floor(p.t);v.setUint32(k,s,true);v.setUint32(k+4,Math.floor((p.t-s)*1e6),true);v.setUint32(k+8,p.b.length,true);v.setUint32(k+12,p.b.length,true);o.set(p.b,k+16);k+=16+p.b.length}
+  return o;
+}
+//NET-END
+const $=s=>document.querySelector(s),t=$('#t'),inp=$('#i'),pr=$('#p');
+const OPEN={21:1,22:1,80:1};
+const FLAGS={'FLAG{anonymous_ftp_is_a_risk}':1,'FLAG{robots_txt_reveals_paths}':1,'FLAG{reused_creds_get_you_in}':1};
+const FS={pub:{'readme.txt':'Welcome to the files01 public FTP.\nFLAG{anonymous_ftp_is_a_risk}\nOld backups live in /backup.'},backup:{'notes.txt':'TODO: rotate the admin password.\nssh user: admin   password: Summer2026!'}};
+const HOME={'flag.txt':'FLAG{reused_creds_get_you_in}','todo.txt':'- patch the ftp server\n- stop reusing passwords'};
+const WEB={'/':'files01 internal portal\n(nothing to see here)','/robots.txt':'User-agent: *\nDisallow: /secret.txt','/secret.txt':'FLAG{robots_txt_reveals_paths}'};
+const HINTS=['Recon first: nmap 10.0.0.9. Which services are open?','FTP servers sometimes allow anonymous logins. Try ftp 10.0.0.9 and the name anonymous.','Explore every FTP directory (ls, cd), download files with get, then read them with cat.','Websites often have a robots.txt. Try curl 10.0.0.9/robots.txt','Found credentials? Reusing them over ssh is a classic mistake.'];
+let mode='sh',found=new Set(),local={},rc=[],fl=null,ask=null,hi=0,hist=[],hp=0;
+try{found=new Set(JSON.parse(localStorage.getItem('range')||'[]'))}catch(e){}
+const save=()=>{try{localStorage.setItem('range',JSON.stringify([...found]))}catch(e){}};
+const out=(x,c='')=>{const d=document.createElement('div');d.textContent=x;d.className=c;t.appendChild(d);t.scrollTop=t.scrollHeight};
+const PROMPT={sh:'attacker@kali:~$',ftp:'ftp>',ssh:'admin@files01:~$'};
+const setp=()=>{pr.textContent=ask?ask.q:PROMPT[mode];inp.type=ask&&ask.hide?'password':'text'};
+const flushFtp=()=>{if(fl){sess(21,fl);fl=null}};
+function sh(c,a){
+  switch(c){
+  case 'help':out('commands: nmap <ip> | ftp <ip> | curl <url> | ssh <user>@<ip> | ls | cat <file> | submit <flag> | hint | status | capture | clear','d');break;
+  case 'nmap':if(a[0]!==T){out('Note: host seems down.','e');break}
+    for(let p=1;p<=1024;p++){const sp=50000+p;pkt(A,T,sp,p,2);pkt(T,A,p,sp,OPEN[p]?0x12:0x14)}
+    out('Nmap scan report for files01 (10.0.0.9)\nPORT   STATE SERVICE\n21/tcp open  ftp\n22/tcp open  ssh\n80/tcp open  http\n1021 closed ports not shown');break;
+  case 'ftp':if(a[0]!==T){out('ftp: connection refused','e');break}
+    fl=[['s','220 files01 FTP ready\r\n']];out('Connected to 10.0.0.9.\n220 files01 FTP ready');
+    ask={q:'Name:',cb:u=>{
+      fl.push(['c','USER '+u+'\r\n']);
+      if(!['anonymous','ftp'].includes(u)){fl.push(['s','530 Login incorrect.\r\n']);out('530 Login incorrect.','e');flushFtp();return}
+      fl.push(['s','331 Password required.\r\n']);
+      ask={q:'Password:',hide:1,cb:p=>{fl.push(['c','PASS '+p+'\r\n'],['s','230 Login successful.\r\n']);out('230 Login successful.');mode='ftp';rc=[]}};
+    }};break;
+  case 'curl':{const m=(a[0]||'').replace(/^https?:\/\//,'').match(/^([^/]+)(\/.*)?$/);
+    if(!m||m[1]!==T){out('curl: could not resolve host','e');break}
+    const p=m[2]||'/',body=WEB[p];
+    sess(80,[['c','GET '+p+' HTTP/1.1\r\nHost: 10.0.0.9\r\nUser-Agent: curl/8.0\r\n\r\n'],['s','HTTP/1.1 '+(body?'200 OK':'404 Not Found')+'\r\n\r\n'+(body||'')]]);
+    out(body||'404 Not Found',body?'':'e');break}
+  case 'ssh':{const m=(a[0]||'').match(/^(\w+)@(.+)$/);
+    if(!m||m[2]!==T){out('usage: ssh user@10.0.0.9','e');break}
+    ask={q:m[1]+'@'+T+"'s password:",hide:1,cb:p=>{
+      sess(22,[['s','SSH-2.0-OpenSSH_9.6\r\n'],['c','SSH-2.0-OpenSSH_9.6\r\n'],['c',btoa(Math.random()+p.length)],['s',btoa(Math.random())]]);
+      if(m[1]==='admin'&&p==='Summer2026!'){mode='ssh';out('Welcome to files01.')}else out('Permission denied, please try again.','e');
+    }};break}
+  case 'ls':out(Object.keys(local).join('  ')||'(no local files yet; download some with ftp get)');break;
+  case 'cat':if(local[a[0]]!==undefined)out(local[a[0]]);else out('cat: '+a[0]+': No such file','e');break;
+  case 'submit':{const f=a.join('');
+    if(!FLAGS[f]){out('Incorrect flag.','e');break}
+    if(found.has(f)){out('Already captured.');break}
+    found.add(f);save();out('Correct! Flags: '+found.size+'/3','g');
+    if(found.size===3)out('MISSION COMPLETE. Type capture to download your session as a .pcap, then drop it into PacketStory to see what you did from the defender\u2019s side.','c');break}
+  case 'hint':out('Hint: '+HINTS[Math.min(hi++,HINTS.length-1)],'d');break;
+  case 'status':out('Flags: '+found.size+'/3','d');break;
+  case 'capture':{flushFtp();if(!P.length){out('Nothing captured yet. Run some commands first.','e');break}
+    const u=URL.createObjectURL(new Blob([pcap()])),l=document.createElement('a');l.href=u;l.download='my-session.pcap';l.click();
+    out('Saved my-session.pcap ('+P.length+' packets). Drop it into PacketStory.','c');break}
+  case 'clear':t.textContent='';break;
+  default:out(c+': command not found. Type help.','e');
+  }
+}
+function ftp(c,a){
+  const n=rc.reduce((o,k)=>o[k],FS);
+  switch(c){
+  case 'ls':fl.push(['c','LIST\r\n'],['s','150 Listing\r\n226 Done\r\n']);out(Object.entries(n).map(([k,v])=>typeof v==='object'?k+'/':k).join('  '));break;
+  case 'cd':if(a[0]==='..')rc.pop();else if(n[a[0]]&&typeof n[a[0]]==='object')rc.push(a[0]);else{out('550 No such directory','e');break}
+    fl.push(['c','CWD '+(a[0]||'')+'\r\n'],['s','250 OK\r\n']);break;
+  case 'get':if(typeof n[a[0]]==='string'){local[a[0]]=n[a[0]];fl.push(['c','RETR '+a[0]+'\r\n'],['s','150 Sending\r\n226 Transfer complete\r\n']);out('226 Transfer complete: '+a[0])}else out('550 File not found','e');break;
+  case 'quit':case 'exit':fl.push(['c','QUIT\r\n'],['s','221 Bye\r\n']);flushFtp();mode='sh';out('221 Goodbye');break;
+  default:out('?Invalid command (ls, cd, get, quit)','e');
+  }
+}
+function rsh(c,a){
+  if(c==='ls')out(Object.keys(HOME).join('  '));
+  else if(c==='cat'){if(HOME[a[0]]!==undefined)out(HOME[a[0]]);else out('cat: '+a[0]+': No such file','e')}
+  else if(c==='whoami')out('admin');
+  else if(c==='exit'){mode='sh';out('Connection closed.')}
+  else out(c+': command not found','e');
+}
+function run(line){
+  out(pr.textContent+' '+(ask&&ask.hide?'':line),'c');
+  clock+=2+Math.random()*3;
+  if(ask){const k=ask;ask=null;k.cb(line.trim());setp();return}
+  const[c,...a]=line.trim().split(/\s+/);if(!c)return;
+  (mode==='sh'?sh:mode==='ftp'?ftp:rsh)(c,a);setp();
+}
+inp.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){const v=inp.value;inp.value='';if(v.trim()&&!ask)hist.push(v);hp=hist.length;run(v)}
+  else if(e.key==='ArrowUp'&&hp>0)inp.value=hist[--hp];
+  else if(e.key==='ArrowDown')inp.value=hist[++hp]||'';
+});
+document.addEventListener('click',()=>inp.focus());
+out('0VULN RANGE v0.1\nA safe, simulated hacking lab. Everything here is fake and runs in your browser.\nTarget: 10.0.0.9 (files01). Capture 3 flags, then submit each with: submit FLAG{...}\nType help to begin. Stuck? Type hint.\n','d');setp();
+</script></body></html>
