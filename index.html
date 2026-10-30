@@ -4,28 +4,35 @@
 <title>0vuln Range – a hacking lab in your browser</title>
 <meta name="description" content="A safe, simulated hacking lab that runs entirely in your browser. Capture the flags, then download your session as a .pcap and analyze it from the defender’s side.">
 <style>
-:root{--bg:#0a0f0a;--fg:#33ff66;--dim:#1c8f3c;--amb:#ffb000;--red:#ff5555}
-*{box-sizing:border-box}html,body{height:100%}
-body{margin:0 auto;background:var(--bg);color:var(--fg);font:15px/1.45 "Courier New",monospace;display:flex;flex-direction:column;padding:12px;max-width:960px}
-#t{flex:1;overflow-y:auto;white-space:pre-wrap;word-break:break-word}
-.c{color:var(--amb)}.e{color:var(--red)}.d{color:var(--dim)}.g{font-weight:bold}
-#l{display:flex;gap:8px;border-top:1px solid var(--dim);padding-top:8px}
-#i{flex:1;min-width:0;background:none;border:0;outline:0;color:var(--fg);font:inherit}
+:root{--bg:#12040f;--fg:#ffe3f1;--dim:#c07a9d;--m:#ff4fa3;--amb:#ffb938;--c:#4df3ff;--red:#ff5470;--line:#5c1747}
+*{box-sizing:border-box}html,body{height:100%}html{background:var(--bg)}
+body{margin:0 auto;max-width:980px;padding:12px 16px;display:flex;flex-direction:column;color:var(--fg);font:16px/1.45 "Cascadia Mono","SF Mono",Menlo,Consolas,"Courier New",monospace;background:radial-gradient(ellipse at 85% 0,#4a0d38 0,transparent 55%),radial-gradient(ellipse at 0 100%,#2a0f5c 0,transparent 50%),var(--bg);text-shadow:0 0 6px rgba(255,79,163,.3)}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:9;background:repeating-linear-gradient(0deg,rgba(0,0,0,.2) 0 1px,transparent 1px 3px),radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,.55) 100%)}
+h1{margin:2px 0 8px;font-size:clamp(28px,7vw,48px);color:#fff;letter-spacing:3px;line-height:.95;font-weight:400;text-shadow:-3px 0 var(--c),3px 0 var(--m),0 0 22px rgba(255,79,163,.45)}
+#t{flex:1;overflow-y:auto;white-space:pre-wrap;word-break:break-word;border:1px solid var(--line);background:rgba(18,4,15,.6);padding:10px 12px;box-shadow:inset 0 0 40px rgba(255,79,163,.06)}
+.c{color:var(--amb)}.e{color:var(--red)}.d{color:var(--dim)}.g{color:var(--c);font-weight:bold;text-shadow:0 0 10px rgba(77,243,255,.6)}
+#l{display:flex;gap:8px;border:1px solid var(--m);padding:8px 10px;margin-top:10px;background:rgba(40,8,32,.7);box-shadow:0 0 14px rgba(255,79,163,.2)}
+#p{color:var(--m)}
+#i{flex:1;min-width:0;background:none;border:0;outline:0;color:var(--fg);font:inherit;text-shadow:inherit}
+.hub{display:flex;justify-content:space-between;gap:12px;font-size:13px;color:var(--dim);border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:14px}.hub a{color:var(--dim);text-decoration:none}.hub a:hover{color:var(--c)}.hub b{color:var(--amb);font-weight:400}
 </style></head><body>
+<nav class="hub"><span><a href="https://0vuln.com">0vuln.com</a> / <b>range</b></span><span><a href="https://pcap.0vuln.com">pcap</a> · <a href="https://raeene.0vuln.com">about</a></span></nav>
+<h1>0VULN RANGE</h1>
 <div id="t"></div>
 <div id="l"><span id="p"></span><input id="i" autocomplete="off" autocapitalize="off" spellcheck="false" autofocus></div>
 <script>
 //NET-START
 const A='10.0.0.5',T='10.0.0.9',P=[];let clock=0;const T0=Math.floor(Date.now()/1000);
-const ipb=s=>s.split('.').map(Number);
-function pkt(s,d,sp,dp,fl,pl=''){
+const ipb=s=>s.split('.').map(Number),enc=s=>new TextEncoder().encode(s);
+function fr(pr,s,d,l4,x){
   clock+=0.002+Math.random()*0.01;
-  const x=new TextEncoder().encode(pl),b=new Uint8Array(54+x.length),v=new DataView(b.buffer);
+  const h=34+l4,b=new Uint8Array(h+x.length),v=new DataView(b.buffer);
   b.set([2,2,2,2,2,2,4,4,4,4,4,4],0);v.setUint16(12,0x800);
-  b[14]=0x45;v.setUint16(16,40+x.length);b[22]=64;b[23]=6;b.set(ipb(s),26);b.set(ipb(d),30);
-  v.setUint16(34,sp);v.setUint16(36,dp);b[46]=0x50;b[47]=fl;v.setUint16(48,8192);b.set(x,54);
-  P.push({t:T0+clock,b});
+  b[14]=0x45;v.setUint16(16,20+l4+x.length);b[22]=64;b[23]=pr;b.set(ipb(s),26);b.set(ipb(d),30);b.set(x,h);
+  P.push({t:T0+clock,b});return v;
 }
+function pkt(s,d,sp,dp,fl,pl=''){const v=fr(6,s,d,20,enc(pl));v.setUint16(34,sp);v.setUint16(36,dp);v.setUint8(46,0x50);v.setUint8(47,fl);v.setUint16(48,8192)}
+function udp(s,d,sp,dp,pl){const x=enc(pl),v=fr(17,s,d,8,x);v.setUint16(34,sp);v.setUint16(36,dp);v.setUint16(38,8+x.length)}
 function sess(dp,ex){
   const sp=40000+Math.floor(Math.random()*20000);
   pkt(A,T,sp,dp,2);pkt(T,A,dp,sp,0x12);pkt(A,T,sp,dp,0x10);
@@ -40,34 +47,82 @@ function pcap(){
 }
 //NET-END
 const $=s=>document.querySelector(s),t=$('#t'),inp=$('#i'),pr=$('#p');
-const OPEN={21:1,22:1,80:1};
-const FLAGS={'FLAG{anonymous_ftp_is_a_risk}':1,'FLAG{robots_txt_reveals_paths}':1,'FLAG{reused_creds_get_you_in}':1};
+const SV={21:'ftp',22:'ssh',25:'smtp',53:'domain',80:'http',110:'pop3',111:'rpcbind',139:'netbios-ssn',143:'imap',445:'microsoft-ds',2049:'nfs',3306:'mysql'};
+const FLAGS={'FLAG{anonymous_ftp_is_a_risk}':'ftp','FLAG{robots_txt_reveals_paths}':'http','FLAG{null_session_lists_the_shares}':'smb','FLAG{nfs_exports_everyone}':'nfs','FLAG{zone_transfer_leaks_the_map}':'dns','FLAG{banners_talk_too_much}':'smtp','FLAG{community_strings_are_passwords}':'snmp','FLAG{leaked_creds_open_the_database}':'mysql','FLAG{mailboxes_hold_secrets}':'imap','FLAG{reused_creds_get_you_in}':'ssh'};
+const ORDER=['ftp','http','smb','nfs','dns','smtp','snmp','mysql','imap','ssh'],TOTAL=ORDER.length;
 const FS={pub:{'readme.txt':'Welcome to the files01 public FTP.\nFLAG{anonymous_ftp_is_a_risk}\nOld backups live in /backup.'},backup:{'notes.txt':'TODO: rotate the admin password.\nssh user: admin   password: Summer2026!'}};
+const SMB={'it-notes.txt':'IT notes\nFLAG{null_session_lists_the_shares}\nInternal domain: corp.local\nMail backup account: backup / Backup2026!'};
+const NFS={'deploy-notes.txt':'Deploy notes\nFLAG{nfs_exports_everyone}\nExports are open to all hosts. TODO: restrict.'};
 const HOME={'flag.txt':'FLAG{reused_creds_get_you_in}','todo.txt':'- patch the ftp server\n- stop reusing passwords'};
 const WEB={'/':'files01 internal portal\n(nothing to see here)','/robots.txt':'User-agent: *\nDisallow: /secret.txt','/secret.txt':'FLAG{robots_txt_reveals_paths}'};
-const HINTS=['Recon first: nmap 10.0.0.9. Which services are open?','FTP servers sometimes allow anonymous logins. Try ftp 10.0.0.9 and the name anonymous.','Explore every FTP directory (ls, cd), download files with get, then read them with cat.','Websites often have a robots.txt. Try curl 10.0.0.9/robots.txt','Found credentials? Reusing them over ssh is a classic mistake.'];
-let mode='sh',found=new Set(),local={},rc=[],fl=null,ask=null,hi=0,hist=[],hp=0;
+const BAN={21:'220 files01 FTP ready',22:'SSH-2.0-OpenSSH_9.6',25:'220 mail.corp.local ESMTP Postfix FLAG{banners_talk_too_much}',110:'+OK POP3 ready',143:'* OK IMAP4rev1 ready'};
+const ZONE='corp.local.\t3600 IN SOA ns1.corp.local. admin.corp.local. 2026102901 3600 600 86400 3600\ncorp.local.\t3600 IN NS  ns1.corp.local.\nns1.corp.local.\t3600 IN A   10.0.0.9\nmail.corp.local.\t3600 IN A   10.0.0.9\nvpn.corp.local.\t3600 IN A   10.0.0.77\ndev-internal.corp.local. 3600 IN A 10.0.0.88\nflag.corp.local.\t3600 IN TXT "FLAG{zone_transfer_leaks_the_map}"';
+const SNMP='SNMPv2-MIB::sysDescr.0 = STRING: Linux files01 6.8.0\nSNMPv2-MIB::sysContact.0 = STRING: admin@corp.local\nSNMPv2-MIB::sysName.0 = STRING: files01\nSNMPv2-MIB::sysLocation.0 = STRING: Rack 4 FLAG{community_strings_are_passwords}\nHOST-RESOURCES-MIB::hrSWRunName.812 = STRING: "dbsync"\nHOST-RESOURCES-MIB::hrSWRunParameters.812 = STRING: "--user dbadmin --password Db#Pass2026 --db app"';
+const HINTS={
+ftp:['FTP servers sometimes allow anonymous logins.','ftp 10.0.0.9, name: anonymous, any password.','ls and cd into every directory, get the files, then cat them locally.'],
+http:['Websites tell crawlers what not to index.','Crawlers read one file first: robots.txt.','curl 10.0.0.9/robots.txt, then curl the disallowed path.'],
+smb:['SMB shares can sometimes be listed without a password (a null session).','smbclient -L //10.0.0.9 -N lists the shares. Connect to one with smbclient //10.0.0.9/<share> -N.','Inside the share: ls, get <file>, exit, then cat the file.'],
+nfs:['NFS exports can be listed with a tool from the nfs-common package.','showmount -e 10.0.0.9, then mount -t nfs 10.0.0.9:<export> /mnt/nfs','ls /mnt/nfs and cat /mnt/nfs/<file>'],
+dns:['A DNS server may hand its whole zone to anyone who asks.','The query type is AXFR. The domain name is in your downloaded notes.','dig axfr corp.local @10.0.0.9'],
+smtp:['Servers announce themselves when you connect.','Grab the banner of the mail port (25) with nc.','nc 10.0.0.9 25'],
+snmp:['SNMP runs over UDP and is often protected only by a community string.','Scan UDP first (nmap -sU 10.0.0.9), then try the default community string with snmpwalk.','snmpwalk -v2c -c public 10.0.0.9 and read every line, especially the process list.'],
+mysql:['Credentials leak in odd places, like process lists.','Use the credentials from the SNMP output: mysql -h 10.0.0.9 -u dbadmin -p','show databases; use app; show tables; select * from secrets;'],
+imap:['Admins keep backup mail accounts with weak passwords. Check your SMB notes.','curl can read mail over IMAP: curl imap://10.0.0.9/INBOX --user name:password','curl imap://10.0.0.9/INBOX --user backup:Backup2026!'],
+ssh:['Credentials found earlier may be reused.','The FTP backup notes contain a username and password.','ssh admin@10.0.0.9, then ls and cat flag.txt']};
+let mode='sh',found=new Set(),local={},rc=[],ft=null,fl=null,ask=null,hist=[],hp=0,mounted=false,db='',hc={};
 try{found=new Set(JSON.parse(localStorage.getItem('range')||'[]'))}catch(e){}
 const save=()=>{try{localStorage.setItem('range',JSON.stringify([...found]))}catch(e){}};
 const out=(x,c='')=>{const d=document.createElement('div');d.textContent=x;d.className=c;t.appendChild(d);t.scrollTop=t.scrollHeight};
-const PROMPT={sh:'attacker@kali:~$',ftp:'ftp>',ssh:'admin@files01:~$'};
-const setp=()=>{pr.textContent=ask?ask.q:PROMPT[mode];inp.type=ask&&ask.hide?'password':'text'};
-const flushFtp=()=>{if(fl){sess(21,fl);fl=null}};
+const prompt=()=>({sh:'attacker@kali:~$',ft:ft&&ft.p==='smb'?'smb: \\>':'ftp>',ssh:'admin@files01:~$',sql:db?'mysql ['+db+']>':'mysql>'})[mode];
+const setp=()=>{pr.textContent=ask?ask.q:prompt();inp.type=ask&&ask.hide?'password':'text'};
+const flushFtp=()=>{if(fl){sess(ft.port,fl);fl=null}};
+const done=s=>[...found].some(f=>FLAGS[f]===s);
 function sh(c,a){
   switch(c){
-  case 'help':out('commands: nmap <ip> | ftp <ip> | curl <url> | ssh <user>@<ip> | ls | cat <file> | submit <flag> | hint | status | capture | clear','d');break;
-  case 'nmap':if(a[0]!==T){out('Note: host seems down.','e');break}
-    for(let p=1;p<=1024;p++){const sp=50000+p;pkt(A,T,sp,p,2);pkt(T,A,p,sp,OPEN[p]?0x12:0x14)}
-    out('Nmap scan report for files01 (10.0.0.9)\nPORT   STATE SERVICE\n21/tcp open  ftp\n22/tcp open  ssh\n80/tcp open  http\n1021 closed ports not shown');break;
+  case 'help':out('commands: nmap [-sU] <ip> | ftp | smbclient | showmount | mount | dig | nc | snmpwalk | mysql | curl | ssh | ls | cat | submit <flag> | hint [service] | status | capture | clear','d');break;
+  case 'nmap':{if(!a.includes(T)){out('Note: host seems down.','e');break}
+    if(a.includes('-sU')){for(const p of[53,67,69,123,137,161,500]){udp(A,T,50000+p,p,'probe');if(p===53||p===161)udp(T,A,p,50000+p,'reply')}
+      out('PORT    STATE SERVICE\n53/udp  open  domain\n161/udp open  snmp');break}
+    for(const p of[...Array(1024).keys()].map(i=>i+1).concat([2049,3306])){const sp=50000+p%10000;pkt(A,T,sp,p,2);pkt(T,A,p,sp,SV[p]?0x12:0x14)}
+    out('Nmap scan report for files01 (10.0.0.9)\nPORT      STATE SERVICE\n'+Object.keys(SV).map(p=>(p+'/tcp').padEnd(10)+'open  '+SV[p]).join('\n'));break}
   case 'ftp':if(a[0]!==T){out('ftp: connection refused','e');break}
-    fl=[['s','220 files01 FTP ready\r\n']];out('Connected to 10.0.0.9.\n220 files01 FTP ready');
+    ft={t:FS,p:'ftp',port:21};fl=[['s','220 files01 FTP ready\r\n']];out('Connected to 10.0.0.9.\n220 files01 FTP ready');
     ask={q:'Name:',cb:u=>{
       fl.push(['c','USER '+u+'\r\n']);
       if(!['anonymous','ftp'].includes(u)){fl.push(['s','530 Login incorrect.\r\n']);out('530 Login incorrect.','e');flushFtp();return}
       fl.push(['s','331 Password required.\r\n']);
-      ask={q:'Password:',hide:1,cb:p=>{fl.push(['c','PASS '+p+'\r\n'],['s','230 Login successful.\r\n']);out('230 Login successful.');mode='ftp';rc=[]}};
+      ask={q:'Password:',hide:1,cb:p=>{fl.push(['c','PASS '+p+'\r\n'],['s','230 Login successful.\r\n']);out('230 Login successful.');mode='ft';rc=[]}};
     }};break;
-  case 'curl':{const m=(a[0]||'').replace(/^https?:\/\//,'').match(/^([^/]+)(\/.*)?$/);
+  case 'smbclient':{const s=a.join(' ');if(!s.includes('//'+T)){out('smbclient: connection failed','e');break}
+    const m=s.match(/\/\/[\d.]+\/(\S+)/);
+    if(!m){sess(445,[['c','SMB2 NEGOTIATE'],['s','OK'],['c','SMB2 TREE_CONNECT IPC$'],['s','OK']]);
+      out('\tSharename       Type      Comment\n\t---------       ----      -------\n\tprint$          Disk      Printer Drivers\n\tpublic          Disk      Public files\n\tbackups         Disk      Backups (restricted)\n\tIPC$            IPC       IPC Service');break}
+    if(m[1]!=='public'){out('tree connect failed: NT_STATUS_ACCESS_DENIED','e');break}
+    ft={t:SMB,p:'smb',port:445};fl=[['c','SMB2 NEGOTIATE'],['s','OK'],['c','SMB2 TREE_CONNECT public'],['s','OK']];mode='ft';rc=[];break}
+  case 'showmount':if(!a.includes(T)){out('clnt_create: RPC: Unable to receive','e');break}
+    sess(111,[['c','PORTMAP GETPORT mountd'],['s','port']]);out('Export list for 10.0.0.9:\n/srv/nfs/backups *');break;
+  case 'mount':{const s=a.join(' ');if(!s.includes(T+':/srv/nfs/backups')||!s.includes('/mnt/nfs')){out('mount.nfs: bad path. Format: mount -t nfs 10.0.0.9:/export /mnt/nfs','e');break}
+    sess(2049,[['c','MOUNT /srv/nfs/backups'],['s','OK']]);mounted=true;out('mounted 10.0.0.9:/srv/nfs/backups on /mnt/nfs');break}
+  case 'dig':{const s=a.join(' ');if(!s.includes('@'+T)||!s.includes('corp.local')){out(';; no servers could be reached (check domain and @server)','e');break}
+    if(!/axfr/i.test(s)){udp(A,T,51000,53,'dns query');udp(T,A,53,51000,'dns answer');out('corp.local.\t3600 IN A 10.0.0.9');break}
+    sess(53,[['c','AXFR corp.local'],['s','zone data']]);out(ZONE);break}
+  case 'nc':{const p=+a[1];if(a[0]!==T||!BAN[p]){out('nc: connection refused','e');break}
+    sess(p,[['s',BAN[p]+'\r\n']]);out(BAN[p]);break}
+  case 'snmpwalk':{const c=a[a.indexOf('-c')+1];if(!a.includes(T)){out('Timeout: No Response','e');break}
+    udp(A,T,52000,161,'get-next community='+c);
+    if(c!=='public'){out('Timeout: No Response from 10.0.0.9','e');break}
+    udp(T,A,161,52000,'response');out(SNMP);break}
+  case 'mysql':{const u=a[a.indexOf('-u')+1];if(!a.includes(T)){out("ERROR 2003: Can't connect to MySQL server",'e');break}
+    ask={q:'Enter password:',hide:1,cb:p=>{const ok=u==='dbadmin'&&p==='Db#Pass2026';
+      sess(3306,[['s','5.7.42 greeting'],['c','login '+u],['s',ok?'OK':'ERR']]);
+      if(ok){mode='sql';db='';out('Welcome to the MySQL monitor.')}else out("ERROR 1045 (28000): Access denied for user '"+u+"'",'e')}};break}
+  case 'curl':{
+    if((a[0]||'').startsWith('imap')){const i=a.findIndex(x=>x==='--user'||x==='-u'),cr=i>=0?a[i+1]:'',ok=cr==='backup:Backup2026!';
+      if(!a[0].includes(T)){out('curl: (6) Could not resolve host','e');break}
+      sess(143,[['c','a1 LOGIN '+cr.replace(':',' ')],['s',ok?'a1 OK':'a1 NO']]);
+      if(!ok){out('curl: (67) Login denied','e');break}
+      out('From: admin@corp.local\nSubject: nightly backup\n\nBackup finished. FLAG{mailboxes_hold_secrets}\nReminder: change this mailbox password.');break}
+    const m=(a[0]||'').replace(/^https?:\/\//,'').match(/^([^/]+)(\/.*)?$/);
     if(!m||m[1]!==T){out('curl: could not resolve host','e');break}
     const p=m[2]||'/',body=WEB[p];
     sess(80,[['c','GET '+p+' HTTP/1.1\r\nHost: 10.0.0.9\r\nUser-Agent: curl/8.0\r\n\r\n'],['s','HTTP/1.1 '+(body?'200 OK':'404 Not Found')+'\r\n\r\n'+(body||'')]]);
@@ -78,15 +133,18 @@ function sh(c,a){
       sess(22,[['s','SSH-2.0-OpenSSH_9.6\r\n'],['c','SSH-2.0-OpenSSH_9.6\r\n'],['c',btoa(Math.random()+p.length)],['s',btoa(Math.random())]]);
       if(m[1]==='admin'&&p==='Summer2026!'){mode='ssh';out('Welcome to files01.')}else out('Permission denied, please try again.','e');
     }};break}
-  case 'ls':out(Object.keys(local).join('  ')||'(no local files yet; download some with ftp get)');break;
-  case 'cat':if(local[a[0]]!==undefined)out(local[a[0]]);else out('cat: '+a[0]+': No such file','e');break;
+  case 'ls':if(a[0]==='/mnt/nfs')out(mounted?Object.keys(NFS).join('  '):'ls: cannot access /mnt/nfs: No such file or directory',mounted?'':'e');
+    else out(Object.keys(local).join('  ')||'(no local files yet; download some with get)');break;
+  case 'cat':{const p=a[0]||'',n=p.startsWith('/mnt/nfs/')&&mounted?NFS[p.slice(9)]:local[p];if(n!==undefined)out(n);else out('cat: '+p+': No such file','e');break}
   case 'submit':{const f=a.join('');
     if(!FLAGS[f]){out('Incorrect flag.','e');break}
     if(found.has(f)){out('Already captured.');break}
-    found.add(f);save();out('Correct! Flags: '+found.size+'/3','g');
-    if(found.size===3)out('MISSION COMPLETE. Type capture to download your session as a .pcap, then drop it into PacketStory to see what you did from the defender\u2019s side.','c');break}
-  case 'hint':out('Hint: '+HINTS[Math.min(hi++,HINTS.length-1)],'d');break;
-  case 'status':out('Flags: '+found.size+'/3','d');break;
+    found.add(f);save();out('Correct! ['+FLAGS[f]+'] Flags: '+found.size+'/'+TOTAL,'g');
+    if(found.size===TOTAL)out('MISSION COMPLETE. Type capture to download your session as a .pcap, then drop it into PacketStory to see what you did from the defender\u2019s side.','c');break}
+  case 'hint':{const s=ORDER.includes(a[0])?a[0]:ORDER.find(x=>!done(x));
+    if(!s){out('All flags captured. Nothing left to hint.','g');break}
+    const h=HINTS[s];hc[s]=Math.min((hc[s]||0)+1,h.length);out('['+s+'] hint '+hc[s]+'/'+h.length+': '+h[hc[s]-1],'d');break}
+  case 'status':out('Flags: '+found.size+'/'+TOTAL+'\n'+ORDER.map(s=>(done(s)?'[x] ':'[ ] ')+s).join('\n'),'d');break;
   case 'capture':{flushFtp();if(!P.length){out('Nothing captured yet. Run some commands first.','e');break}
     const u=URL.createObjectURL(new Blob([pcap()])),l=document.createElement('a');l.href=u;l.download='my-session.pcap';l.click();
     out('Saved my-session.pcap ('+P.length+' packets). Drop it into PacketStory.','c');break}
@@ -94,16 +152,26 @@ function sh(c,a){
   default:out(c+': command not found. Type help.','e');
   }
 }
-function ftp(c,a){
-  const n=rc.reduce((o,k)=>o[k],FS);
+function ftc(c,a){
+  const n=rc.reduce((o,k)=>o[k],ft.t),f=ft.p==='ftp',lg=(x,y)=>fl.push(['c',f?x+'\r\n':'SMB2 '+x.split(' ')[0]],['s',f?y:'STATUS_SUCCESS']);
   switch(c){
-  case 'ls':fl.push(['c','LIST\r\n'],['s','150 Listing\r\n226 Done\r\n']);out(Object.entries(n).map(([k,v])=>typeof v==='object'?k+'/':k).join('  '));break;
+  case 'ls':lg('LIST','150 Listing\r\n226 Done\r\n');out(Object.entries(n).map(([k,v])=>typeof v==='object'?k+'/':k).join('  '));break;
   case 'cd':if(a[0]==='..')rc.pop();else if(n[a[0]]&&typeof n[a[0]]==='object')rc.push(a[0]);else{out('550 No such directory','e');break}
-    fl.push(['c','CWD '+(a[0]||'')+'\r\n'],['s','250 OK\r\n']);break;
-  case 'get':if(typeof n[a[0]]==='string'){local[a[0]]=n[a[0]];fl.push(['c','RETR '+a[0]+'\r\n'],['s','150 Sending\r\n226 Transfer complete\r\n']);out('226 Transfer complete: '+a[0])}else out('550 File not found','e');break;
-  case 'quit':case 'exit':fl.push(['c','QUIT\r\n'],['s','221 Bye\r\n']);flushFtp();mode='sh';out('221 Goodbye');break;
-  default:out('?Invalid command (ls, cd, get, quit)','e');
+    lg('CWD '+(a[0]||''),'250 OK\r\n');break;
+  case 'get':if(typeof n[a[0]]==='string'){local[a[0]]=n[a[0]];lg('RETR '+a[0],'150 Sending\r\n226 Transfer complete\r\n');out(f?'226 Transfer complete: '+a[0]:'getting file '+a[0])}else out(f?'550 File not found':'NT_STATUS_OBJECT_NAME_NOT_FOUND','e');break;
+  case 'quit':case 'exit':if(f){lg('QUIT','221 Bye\r\n');out('221 Goodbye')}flushFtp();mode='sh';break;
+  default:out('unknown command (ls, cd, get, exit)','e');
   }
+}
+function sqlh(q){
+  q=q.replace(/;$/,'').trim();const l=q.toLowerCase();
+  if(l==='exit'||l==='quit'){mode='sh';db='';out('Bye')}
+  else if(l==='show databases')out('app\ninformation_schema');
+  else if(l==='use app'){db='app';out('Database changed')}
+  else if(l==='show tables')db?out('users\nsecrets'):out('ERROR 1046: No database selected','e');
+  else if(l==='select * from secrets'&&db)out('id  name     value\n1   api_key  k-93hd72\n2   flag     FLAG{leaked_creds_open_the_database}');
+  else if(l==='select * from users'&&db)out('id  username  role\n1   admin     owner\n2   backup    service');
+  else out('Not supported here. Try: show databases; use app; show tables; select * from secrets','e');
 }
 function rsh(c,a){
   if(c==='ls')out(Object.keys(HOME).join('  '));
@@ -116,8 +184,9 @@ function run(line){
   out(pr.textContent+' '+(ask&&ask.hide?'':line),'c');
   clock+=2+Math.random()*3;
   if(ask){const k=ask;ask=null;k.cb(line.trim());setp();return}
+  if(mode==='sql'){sqlh(line);setp();return}
   const[c,...a]=line.trim().split(/\s+/);if(!c)return;
-  (mode==='sh'?sh:mode==='ftp'?ftp:rsh)(c,a);setp();
+  ({sh,ft:ftc,ssh:rsh})[mode](c,a);setp();
 }
 inp.addEventListener('keydown',e=>{
   if(e.key==='Enter'){const v=inp.value;inp.value='';if(v.trim()&&!ask)hist.push(v);hp=hist.length;run(v)}
@@ -125,5 +194,5 @@ inp.addEventListener('keydown',e=>{
   else if(e.key==='ArrowDown')inp.value=hist[++hp]||'';
 });
 document.addEventListener('click',()=>inp.focus());
-out('0VULN RANGE v0.1\nA safe, simulated hacking lab. Everything here is fake and runs in your browser.\nTarget: 10.0.0.9 (files01). Capture 3 flags, then submit each with: submit FLAG{...}\nType help to begin. Stuck? Type hint.\n','d');setp();
+out('v0.2 // A safe, simulated hacking lab. Everything here is fake and runs in your browser.\nTarget: 10.0.0.9 (files01). Capture '+TOTAL+' flags across 10 services, then submit each with: submit FLAG{...}\nType help to begin. Stuck? Type hint (or hint smb, hint nfs, ...).\n','d');setp();
 </script></body></html>
