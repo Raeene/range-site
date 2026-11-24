@@ -133,13 +133,15 @@ const setp = () => { pr.textContent = ask ? ask.q : promptStr(); inp.type = ask 
 const flushFtp = () => { if (fl) { sess(ft.port, fl); fl = null; } };
 const done = s => [...found].some(f => FLAGS[f] === s);
 
+const PORTS = { ftp: 21, http: 80, smb: 445, nfs: 2049, dns: 53, smtp: 25, snmp: 161, mysql: 3306, imap: 143, ssh: 22 };
 function panel() {
   $('#score').textContent = found.size + '/' + TOTAL;
-  $('#meter').innerHTML = ORDER.map((s, i) => '<i class="' + (i < found.size ? 'on' : '') + '"></i>').join('');
-  $('#flags').innerHTML = ORDER.map(s => '<li class="' + (done(s) ? 'on' : '') + '"><button type="button" data-run="hint ' + s + '" title="hint for ' + s + '">' + s + '</button></li>').join('');
+  const ring = $('#ring'), C = 2 * Math.PI * 52;
+  ring.style.strokeDasharray = C.toFixed(1); ring.style.strokeDashoffset = (C * (1 - found.size / TOTAL)).toFixed(1);
+  $('#flags').innerHTML = ORDER.map(s => '<li class="' + (done(s) ? 'on' : '') + '"><button type="button" data-run="hint ' + s + '" title="' + (done(s) ? s + ': captured' : 'hint for ' + s) + '"><b>' + s + '</b><span>' + (done(s) ? 'pwned' : PORTS[s] + (s === 'snmp' ? '/udp' : '/tcp')) + '</span></button></li>').join('');
 }
 const fmtTime = ms => { const s = Math.floor(ms / 1000); return (s >= 3600 ? Math.floor(s / 3600) + 'h ' : '') + String(Math.floor(s / 60) % 60).padStart(2, '0') + 'm ' + String(s % 60).padStart(2, '0') + 's'; };
-setInterval(() => { $('#timer').textContent = !started ? 'not started' : fmtTime((finished || Date.now()) - started) + (finished ? ' (done)' : ''); }, 500);
+setInterval(() => { $('#timer').textContent = !started ? 'not started' : fmtTime((finished || Date.now()) - started) + (finished ? ' (done)' : ''); $('#pkts').textContent = P.length.toLocaleString(); }, 500);
 
 function sh(c, a) {
   switch (c) {
@@ -268,7 +270,8 @@ function sh(c, a) {
       if (found.has(f)) { out('Already captured.', 'd'); break; }
       found.add(f); if (found.size === TOTAL) finished = Date.now(); save(); panel();
       out('Correct! [' + FLAGS[f] + '] Flags: ' + found.size + '/' + TOTAL, 'g');
-      if (found.size === TOTAL) { out('\n  *** MISSION COMPLETE in ' + fmtTime(finished - started) + ' ***', 'win'); out('Now flip sides: type analyze to send your whole session to PacketStory and see your attack the way a defender would.\n', 'c'); $('#termbox').classList.add('flash'); }
+      pop(FLAGS[f]);
+      if (found.size === TOTAL) { out('\n  *** MISSION COMPLETE in ' + fmtTime(finished - started) + ' ***', 'win'); out('Now flip sides: type analyze to send your whole session to PacketStory and see your attack the way a defender would.\n', 'c'); setTimeout(win, 600); }
       break;
     }
     case 'hint': {
@@ -396,7 +399,8 @@ inp.addEventListener('keydown', e => {
 $('#termbox').addEventListener('click', () => { if (!getSelection().toString()) inp.focus(); });
 document.addEventListener('click', e => {
   const r = e.target.closest('[data-run]'), ty = e.target.closest('[data-type]');
-  if (r && !ask) { run(r.dataset.run); inp.focus(); }
+  if (e.target.closest('[data-close]')) closeModal();
+  if (r && !ask) { run(r.dataset.run); if (!r.closest('.modal')) inp.focus(); }
   if (ty) { inp.value = ty.dataset.type; inp.focus(); }
 });
 const fb = $('#fs'), tb = $('#termbox');
@@ -404,9 +408,47 @@ if (tb.requestFullscreen) fb.onclick = () => document.fullscreenElement ? docume
 else fb.hidden = true;
 
 function intro() {
-  out('0vuln Range v0.3: a safe, simulated hacking lab. Everything here is fake and runs in your browser.', 'm');
+  out('0vuln Range v1.0: a safe, simulated hacking lab. Everything here is fake and runs in your browser.', 'm');
   out('Target: 10.0.0.9 (files01). Capture ' + TOTAL + ' flags across 10 services and submit each with: submit FLAG{...}', 'd');
   out(found.size ? 'Welcome back. You have ' + found.size + '/' + TOTAL + ' flags. Type status to see what is left.\n' : 'New here? Start with: nmap 10.0.0.9   (stuck? type hint)\n', 'c');
 }
+// ---- UI: flag pop, modals, confetti ----
+function pop(svc) {
+  const li = [...document.querySelectorAll('#flags li')][ORDER.indexOf(svc)];
+  if (li) { li.classList.add('pop'); setTimeout(() => li.classList.remove('pop'), 900); }
+  window.OV && OV.toast('Flag captured: ' + svc + ' (' + found.size + '/' + TOTAL + ')');
+}
+let openModal = null;
+function showModal(id) { closeModal(); const m = $(id); m.hidden = false; requestAnimationFrame(() => m.classList.add('open')); openModal = m; const b = m.querySelector('.btn'); if (b) b.focus(); }
+function closeModal() { if (!openModal) return; const m = openModal; m.classList.remove('open'); setTimeout(() => { m.hidden = true; }, 250); openModal = null; confettiOn = false; if (matchMedia('(pointer: fine)').matches) inp.focus(); }
+addEventListener('keydown', e => { if (e.key === 'Escape' && openModal) closeModal(); });
+document.querySelectorAll('.modal').forEach(m => m.addEventListener('mousedown', e => { if (e.target === m) closeModal(); }));
+$('#brief-open').addEventListener('click', () => showModal('#brief'));
+$('#brief-go').addEventListener('click', () => { store.set('range-briefed', 1); closeModal(); });
+let confettiOn = false;
+function win() {
+  $('#win-time').textContent = 'You owned files01 in ' + fmtTime(finished - started) + '.';
+  showModal('#win');
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const cv = $('#confetti'), x = cv.getContext('2d'), W = cv.width = innerWidth, H = cv.height = innerHeight;
+  const cols = ['#ff4d6d', '#9b87ff', '#22d3ee', '#34d399', '#fbbf24', '#ffffff'];
+  const ps = Array.from({ length: 180 }, () => ({ x: W / 2 + (Math.random() - .5) * 200, y: H * .45, vx: (Math.random() - .5) * 16, vy: -Math.random() * 16 - 4, r: Math.random() * 6.28, vr: (Math.random() - .5) * .3, s: 4 + Math.random() * 6, c: cols[Math.random() * cols.length | 0] }));
+  confettiOn = true;
+  (function f() {
+    x.clearRect(0, 0, W, H);
+    let alive = 0;
+    for (const p of ps) { p.vy += .35; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.r += p.vr; if (p.y < H + 20) alive++; x.save(); x.translate(p.x, p.y); x.rotate(p.r); x.fillStyle = p.c; x.fillRect(-p.s / 2, -p.s / 4, p.s, p.s / 2); x.restore(); }
+    if (alive && confettiOn) requestAnimationFrame(f); else x.clearRect(0, 0, W, H);
+  })();
+}
+if (window.OV) OV.register('Range', [
+  { t: 'Get a hint', i: 'bolt', c: '#ff4d6d', run: () => run('hint') },
+  { t: 'Show status', i: 'range', c: '#ff4d6d', run: () => run('status') },
+  { t: 'Download my session (.pcap)', i: 'file', c: '#ff4d6d', run: () => run('capture') },
+  { t: 'Analyze my attack in PacketStory', i: 'pcap', c: '#22d3ee', run: () => run('analyze') },
+  { t: 'Mission briefing', i: 'file', c: '#ff4d6d', run: () => showModal('#brief') },
+]);
+
 intro(); panel(); setp();
-if (matchMedia('(pointer: fine)').matches) inp.focus();
+if (!store.get('range-briefed', 0) && !found.size) showModal('#brief');
+else if (matchMedia('(pointer: fine)').matches) inp.focus();

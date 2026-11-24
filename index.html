@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="no-js">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -7,61 +7,148 @@
 <meta name="description" content="A safe, simulated hacking lab that runs entirely in your browser. Hack 10 services, capture 10 flags, then send your session to PacketStory and investigate your own attack.">
 <link rel="canonical" href="https://range.0vuln.com/">
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="0vuln">
 <meta property="og:url" content="https://range.0vuln.com/">
 <meta property="og:title" content="0vuln Range: a hacking lab in your browser">
-<meta property="og:description" content="10 services, 10 flags, no setup. Then analyze your own attack from the defender's side.">
+<meta property="og:description" content="A safe, simulated hacking lab that runs entirely in your browser. Hack 10 services, capture 10 flags, then send your session to PacketStory and investigate your own attack.">
 <meta property="og:image" content="https://range.0vuln.com/og.png">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="theme-color" content="#12040f">
+<meta name="theme-color" content="#06070b">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="preload" href="/vt323.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/range.css">
-<script src="/range.js" defer></script>
+<link rel="preload" href="/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/space-grotesk.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/ds.css"><link rel="stylesheet" href="/range.css">
+<script src="/ds.js" defer></script><script src="/range.js" defer></script>
 </head>
-<body>
-<a class="skip" href="#i">skip to terminal</a>
-<header class="ov">
-  <a class="ov-logo" href="https://0vuln.com" aria-label="0vuln.com hub"><img src="/favicon.svg" alt="">0vuln</a><span class="ov-crumb">/ <b>range</b></span>
-  <nav aria-label="0vuln sites"><a href="https://pcap.0vuln.com">pcap</a><a href="https://raeene.0vuln.com">raeene</a><a href="https://github.com/Raeene/range-site">source</a></nav>
+<body data-site="range">
+<a class="skip" href="#main">Skip to content</a>
+<div class="bg-fx" aria-hidden="true"><i></i><i></i><i></i></div>
+<header class="nav" id="top">
+  <div class="wrap">
+    <a class="logo" href="https://0vuln.com/" aria-label="0vuln home"><img src="/favicon.svg" alt="" width="28" height="28"><span>0vuln</span></a>
+    <nav class="sites" aria-label="0vuln sites"><a class="s-hub" href="https://0vuln.com/">Hub</a><a class="s-range" href="https://range.0vuln.com/" aria-current="page">Range</a><a class="s-pcap" href="https://pcap.0vuln.com/">PacketStory</a><a class="s-raeene" href="https://raeene.0vuln.com/">Raeene</a></nav>
+    <span class="sp"></span>
+    
+    <button class="k-btn" type="button" data-cmdk aria-label="Open command menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span class="k-label">Jump to</span><span class="kbd k-mod">Ctrl</span><span class="kbd">K</span></button>
+    <a class="icon-btn gh" href="https://github.com/Raeene/range-site" aria-label="Source code on GitHub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12 12 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+  </div>
 </header>
-
-<div class="app">
-  <section class="termbox" id="termbox" aria-label="Terminal">
-    <div class="term-h"><i></i><i></i><i></i><span>attacker@kali: ~ (simulated)</span><span class="sp"></span><button type="button" id="fs" title="Toggle fullscreen">&#x26F6; fullscreen</button></div>
-    <div id="t" role="log" aria-live="polite"></div>
-    <div id="l"><label id="p" for="i"></label><input id="i" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="send"></div>
-  </section>
-
-  <aside>
-    <div class="box">
-      <h2>mission</h2>
-      <dl class="kv"><dt>target</dt><dd>10.0.0.9 (files01)</dd><dt>you</dt><dd>10.0.0.5 (kali)</dd><dt>goal</dt><dd>capture all 10 flags</dd><dt>time</dt><dd id="timer">not started</dd></dl>
+<main id="main" class="rg">
+  <div class="wrap rg-head">
+    <div>
+      <p class="eyebrow">Range &middot; target 10.0.0.9</p>
+      <h1 class="h-2">Own <span class="grad-acc">files01</span>. Capture ten flags.</h1>
     </div>
-    <div class="box">
-      <div class="progress"><b id="score">0/10</b><span>flags captured</span></div>
-      <div class="meter" id="meter" aria-hidden="true"></div>
-      <ul class="flags" id="flags" aria-label="Flags by service"></ul>
+    <div class="row">
+      <button class="btn btn-ghost btn-sm" type="button" id="brief-open"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5a2 2 0 0 1 2-2h14v16H6a2 2 0 0 0-2 2zm0 0a2 2 0 0 0 2 2h14"/></svg>Briefing</button>
+      <button class="btn btn-acc btn-sm" type="button" data-run="analyze"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>Analyze my attack</button>
     </div>
-    <div class="box">
-      <div class="btns">
-        <button class="btn ghost" type="button" data-run="hint">hint</button>
-        <button class="btn ghost" type="button" data-run="help">help</button>
-        <button class="btn ghost" type="button" data-run="capture">download .pcap</button>
-        <button class="btn ghost" type="button" data-run="reset">reset</button>
-        <button class="btn primary wide" type="button" data-run="analyze">analyze my attack in PacketStory &rarr;</button>
+  </div>
+
+  <div class="wrap rg-app">
+    <section class="term rg-term" id="termbox" aria-label="Terminal">
+      <div class="term-bar">
+        <span class="lights"><i></i><i></i><i></i></span>
+        <span class="title">attacker@kali: ~ (simulated)</span>
+        <button type="button" data-run="hint" title="Get a hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg></button>
+        <button type="button" id="fs" title="Toggle fullscreen" aria-label="Toggle fullscreen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
+      </div>
+      <div class="term-body" id="t" role="log" aria-live="polite"></div>
+      <div class="term-line" id="l"><label id="p" for="i"></label><input id="i" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="send" aria-label="Command"></div>
+      <div class="quick" aria-label="Quick commands">
+        <button type="button" data-type="nmap 10.0.0.9">nmap 10.0.0.9</button>
+        <button type="button" data-type="nmap -sU 10.0.0.9">nmap -sU</button>
+        <button type="button" data-type="ftp 10.0.0.9">ftp</button>
+        <button type="button" data-type="curl 10.0.0.9/robots.txt">curl robots.txt</button>
+        <button type="button" data-type="smbclient -L //10.0.0.9 -N">smbclient -L</button>
+        <button type="button" data-run="status">status</button>
+        <button type="button" data-run="help">help</button>
+      </div>
+    </section>
+
+    <aside class="rg-side">
+      <div class="side-card prog-card">
+        <div class="ring">
+          <svg viewBox="0 0 120 120" aria-hidden="true"><defs><linearGradient id="rg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff4d6d"/><stop offset="1" stop-color="#9b87ff"/></linearGradient></defs><circle cx="60" cy="60" r="52" class="r-bg"/><circle cx="60" cy="60" r="52" class="r-fg" id="ring"/></svg>
+          <div class="ring-n"><b id="score">0/10</b><span>flags</span></div>
+        </div>
+        <dl class="mission">
+          <div><dt>Target</dt><dd>10.0.0.9 <span class="dim">files01</span></dd></div>
+          <div><dt>You</dt><dd>10.0.0.5 <span class="dim">kali</span></dd></div>
+          <div><dt>Time</dt><dd id="timer">not started</dd></div>
+          <div><dt>Packets</dt><dd id="pkts">0</dd></div>
+        </dl>
+      </div>
+
+      <div class="side-card">
+        <div class="side-h"><h2>Flags</h2><span class="dim">click for a hint</span></div>
+        <ul class="flags" id="flags" aria-label="Flags by service"></ul>
+      </div>
+
+      <div class="side-card acts">
+        <button class="btn btn-primary" type="button" data-run="analyze"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>Analyze in PacketStory<svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+        <div class="acts-row">
+          <button class="btn btn-ghost btn-sm" type="button" data-run="capture"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>.pcap</button>
+          <button class="btn btn-ghost btn-sm" type="button" data-run="hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>Hint</button>
+          <button class="btn btn-ghost btn-sm" type="button" data-run="reset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.9-3M4 13a8 8 0 0 0 14.9 3"/><path d="M4 4v4h4M20 20v-4h-4"/></svg>Reset</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <section class="section tight">
+    <div class="wrap">
+      <div class="grid g3">
+        <div class="card reveal"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/></svg></span><h3>Everything is simulated</h3><p>No real host is touched and nothing leaves your browser. The target, its services and the network all live in this tab.</p></div>
+        <div class="card reveal d1"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/></svg></span><h3>But the packets are real</h3><p>Every command emits well-formed frames with valid checksums. Download them as a .pcap and open it in Wireshark.</p></div>
+        <div class="card c-cyan reveal d2"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></span><h3>Then switch sides</h3><p>Type <code>analyze</code> and PacketStory opens with your whole session, showing your attack the way a defender sees it.</p></div>
       </div>
     </div>
-    <div class="box">
-      <h2>quick start</h2>
-      <div class="chips-q"><button type="button" data-type="nmap 10.0.0.9">nmap 10.0.0.9</button><button type="button" data-type="ftp 10.0.0.9">ftp 10.0.0.9</button><button type="button" data-type="curl 10.0.0.9/robots.txt">curl robots.txt</button><button type="button" data-type="status">status</button></div>
-    </div>
-    <div class="box about">
-      <h2>how it works</h2>
-      <p>Everything is simulated in JavaScript. No real host is touched, and nothing leaves your browser.</p>
-      <p>Every command still generates real packets. When you're done, <code>analyze</code> sends your session to <a href="https://pcap.0vuln.com">PacketStory</a> so you can see your own attack from the defender's side.</p>
-      <p>Tab completes commands, the arrow keys walk your history, and <code>hint</code> nudges you forward.</p>
-    </div>
-  </aside>
+  </section>
+</main>
+
+<div class="modal" id="brief" hidden role="dialog" aria-modal="true" aria-labelledby="brief-h">
+  <div class="modal-card">
+    <p class="eyebrow">Mission briefing</p>
+    <h2 class="h-2" id="brief-h">Get into files01.</h2>
+    <p class="muted">A small company server sits at <code>10.0.0.9</code>. It runs ten services, and every one of them is misconfigured. Find a flag in each, then submit it with <code>submit FLAG{...}</code>.</p>
+    <ul class="brief-list">
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 17 6-6-6-6M12 19h8"/></svg><span>Start with recon: <code>nmap 10.0.0.9</code></span></li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg><span>Stuck? <code>hint</code> gives progressive nudges, and you can click any flag tile.</span></li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 3 4 14h7l-1 7 9-11h-7z"/></svg><span><kbd>Tab</kbd> completes, <kbd>&uarr;</kbd> <kbd>&darr;</kbd> walk your history. Progress is saved in your browser.</span></li>
+    </ul>
+    <div class="row"><button class="btn btn-primary" type="button" id="brief-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 5v14l11-7z"/></svg>Start the mission</button></div>
+  </div>
 </div>
+
+<div class="modal" id="win" hidden role="dialog" aria-modal="true" aria-labelledby="win-h">
+  <canvas id="confetti" aria-hidden="true"></canvas>
+  <div class="modal-card win-card">
+    <span class="win-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg></span>
+    <p class="eyebrow">Mission complete</p>
+    <h2 class="h-1" id="win-h">10/10 flags.</h2>
+    <p class="muted" id="win-time">You owned files01.</p>
+    <p class="muted">Now flip sides: send your whole session to PacketStory and see your attack the way a defender would.</p>
+    <div class="row"><button class="btn btn-primary" type="button" data-run="analyze" data-close><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>Analyze my attack<svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button><button class="btn btn-ghost" type="button" data-close>Keep exploring</button></div>
+  </div>
+</div>
+<footer class="foot">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <a class="logo" href="https://0vuln.com/"><img src="/favicon.svg" alt="" width="28" height="28"><span>0vuln</span></a>
+        <p class="blurb">A free cybersecurity playground. Attack a simulated server, then investigate your own attack from the defender's side. Everything runs in your browser.</p>
+      </div>
+      <div><h4>Tools</h4><ul><li><a href="https://range.0vuln.com/">Range</a></li><li><a href="https://pcap.0vuln.com/">PacketStory</a></li><li><a href="https://pcap.0vuln.com/#demo">PacketStory demo</a></li><li><a href="https://0vuln.com/#shell">Hub shell</a></li></ul></div>
+      <div><h4>Raeene</h4><ul><li><a href="https://raeene.0vuln.com/about/">About</a></li><li><a href="https://raeene.0vuln.com/projects/">Projects</a></li><li><a href="https://raeene.0vuln.com/resume/">Resume</a></li><li><a href="https://raeene.0vuln.com/now/">Now</a></li></ul></div>
+      <div><h4>Elsewhere</h4><ul><li><a href="https://github.com/Raeene">GitHub</a></li><li><a href="https://www.linkedin.com/in/ray-safi-938491195/">LinkedIn</a></li><li><a href="mailto:raaene@protonmail.com">Email</a></li><li><a href="https://0vuln.com/.well-known/security.txt">security.txt</a></li></ul></div>
+    </div>
+    <div class="foot-bot">
+      <span>&copy; <span data-year>2026</span> Mohamed-Rayane (Raeene). <a class="link" href="https://github.com/Raeene/range-site">Source on GitHub</a>.</span>
+      <span class="status"><span class="dot"></span>No trackers, no cookies, strict CSP.</span>
+    </div>
+    <div class="foot-word" aria-hidden="true">0vuln</div>
+  </div>
+</footer>
 </body>
 </html>
