@@ -101,3 +101,10 @@
 .loot li { font: 12.5px/1.5 var(--mono); color: #e3e6ee; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: rgba(255, 255, 255, .02); word-break: break-word; animation: rise .5s var(--ease) both; }
 .loot li.empty { font: 13px/1.5 var(--sans); color: var(--dim); border-style: dashed; animation: none; }
 .rg-term .term-body .m { color: var(--violet); }
+.win-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 20px 0 8px; }
+.win-stats div { padding: 12px 8px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); }
+.win-stats b { display: block; font: 600 20px/1.1 var(--display); color: #fff; font-variant-numeric: tabular-nums; }
+.win-stats span { font: 500 10.5px var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--dim); }
+@media (max-width: 480px) { .win-stats { grid-template-columns: 1fr 1fr; } }
+.win-card .win-ic { display: grid; margin: 0 auto 18px; }
+.win-card .eyebrow { display: flex; justify-content: center; }

@@ -126,7 +126,10 @@ found = new Set(store.get('range', []).filter(f => FLAGS[f]));
 started = store.get('range-start', 0); finished = store.get('range-end', 0);
 hist = store.get('range-hist', []); hp = hist.length;
 let loot = store.get('range-loot', []);
-const save = () => { store.set('range', [...found]); store.set('range-start', started); store.set('range-end', finished); };
+hc = store.get('range-hints', {});
+let cmds = store.get('range-cmds', 0);
+const hintsUsed = () => Object.values(hc).reduce((a, n) => a + n, 0);
+const save = () => { store.set('range', [...found]); store.set('range-start', started); store.set('range-end', finished); store.set('range-hints', hc); store.set('range-cmds', cmds); };
 
 const out = (x, c = '') => { const d = document.createElement('div'); d.textContent = x; d.className = c; t.appendChild(d); t.scrollTop = t.scrollHeight; if (!c) collect(String(x)); };
 // write down anything useful that appears in normal output (hints are class 'd', so they never count)
@@ -291,7 +294,7 @@ function sh(c, a) {
     case 'hint': {
       const s = ORDER.includes(a[0]) ? a[0] : ORDER.find(x => !done(x));
       if (!s) { out('All flags captured. Nothing left to hint.', 'g'); break; }
-      const h = HINTS[s]; hc[s] = Math.min((hc[s] || 0) + 1, h.length); out('[' + s + '] hint ' + hc[s] + '/' + h.length + ': ' + h[hc[s] - 1], 'd'); break;
+      const h = HINTS[s]; hc[s] = Math.min((hc[s] || 0) + 1, h.length); save(); out('[' + s + '] hint ' + hc[s] + '/' + h.length + ': ' + h[hc[s] - 1], 'd'); break;
     }
     case 'loot': out(loot.length ? 'Loot notebook:\n' + loot.map(l => '  - ' + l).join('\n') : 'Nothing written down yet. Credentials and clues are saved here as you find them.', 'd'); break;
     case 'debrief': {
@@ -306,7 +309,7 @@ function sh(c, a) {
       if (!e) { out('usage: explain <command>   (' + Object.keys(EXPLAIN).join(', ') + ')', 'e'); break; }
       out(a[0] + ': ' + e[0], 'c'); e.slice(1).filter(Boolean).forEach(l => out('  ' + l, 'd')); break;
     }
-    case 'status': out('Flags: ' + found.size + '/' + TOTAL + '   packets captured: ' + P.length + '\n' + ORDER.map(s => (done(s) ? '[x] ' : '[ ] ') + s).join('\n'), 'd'); break;
+    case 'status': out('Flags: ' + found.size + '/' + TOTAL + '   packets captured: ' + P.length + '   hints used: ' + hintsUsed() + '   commands: ' + cmds + '\n' + ORDER.map(s => (done(s) ? '[x] ' : '[ ] ') + s).join('\n'), 'd'); break;
     case 'capture': {
       flushFtp(); if (!P.length) { out('Nothing captured yet. Run some commands first.', 'e'); break; }
       const u = URL.createObjectURL(new Blob([pcap()], { type: 'application/vnd.tcpdump.pcap' })), l = document.createElement('a');
@@ -331,7 +334,7 @@ function sh(c, a) {
     case 'reset':
       ask = { q: 'Reset all progress and the capture? (yes/no)', cb: r => {
         if (r.toLowerCase() !== 'yes') { out('Cancelled.', 'd'); return; }
-        found = new Set(); started = finished = 0; P.length = 0; files = {}; mounted = false; hc = {}; loot = []; store.set('range-loot', loot); save(); panel(); lootPanel(); t.textContent = ''; intro();
+        found = new Set(); started = finished = 0; P.length = 0; files = {}; mounted = false; hc = {}; cmds = 0; loot = []; store.set('range-loot', loot); save(); panel(); lootPanel(); t.textContent = ''; intro();
       } }; break;
     case 'clear': t.textContent = ''; break;
     case 'exit': out('You are already on your own machine. (Try clear or reset.)', 'd'); break;
@@ -386,6 +389,7 @@ function run(line) {
   if (mode === 'sql') { sqlh(line); setp(); return; }
   const [c, ...a] = line.trim().split(/\s+/); if (!c) return;
   if (!started && !['help', 'hint', 'status', 'clear', 'history', 'reset'].includes(c)) { started = Date.now(); save(); }
+  if (mode !== 'sql' && !['help', 'hint', 'status', 'clear', 'history', 'loot', 'debrief', 'explain'].includes(c) && !finished) { cmds++; store.set('range-cmds', cmds); }
   ({ sh, ft: ftc, ssh: rsh })[mode](c, a); setp();
 }
 
@@ -455,7 +459,12 @@ $('#brief-open').addEventListener('click', () => showModal('#brief'));
 $('#brief-go').addEventListener('click', () => { store.set('range-briefed', 1); closeModal(); });
 let confettiOn = false;
 function win() {
-  $('#win-time').textContent = 'You owned files01 in ' + fmtTime(finished - started) + '.';
+  const ms = finished - started, best = store.get('range-best', 0), record = !best || ms < best;
+  if (record) store.set('range-best', ms);
+  $('#win-time').textContent = 'You owned files01 in ' + fmtTime(ms) + '.' + (record ? (best ? ' New personal best!' : '') : ' Your best: ' + fmtTime(best) + '.');
+  const h = hintsUsed();
+  $('#win-stats').innerHTML = [['Time', fmtTime(ms)], ['Hints used', h === 0 ? '0 \u2605' : h], ['Commands', cmds], ['Packets', P.length.toLocaleString()]]
+    .map(([k, v]) => '<div><b>' + v + '</b><span>' + k + '</span></div>').join('');
   showModal('#win');
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const cv = $('#confetti'), x = cv.getContext('2d'), W = cv.width = innerWidth, H = cv.height = innerHeight;
