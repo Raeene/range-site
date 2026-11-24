@@ -26,3 +26,9 @@ Static site. Cloudflare Pages: no build command, output directory `/`.
 More machines and levels, a web exploitation level, a scoreboard for events.
 
 MIT licensed. Educational use only.
+
+## Learning features
+- **Debriefs**: every flag you submit explains what was misconfigured, how to fix it, what a defender would see, and the MITRE ATT&CK technique. Click a captured flag tile or type `debrief` to reread them.
+- **Loot notebook**: credentials and clues are written down automatically as they appear in command output (hints never count). Type `loot` or see the side panel.
+- **explain <command>**: what a tool does and what it looks like on the network, e.g. `explain nmap`.
+- Content lives in `learn.js` (pure data), separate from the engine in `range.js`.

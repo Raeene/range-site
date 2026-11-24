@@ -112,7 +112,7 @@ const HINTS = {
   imap: ['Admins keep backup mail accounts with weak passwords. Check your SMB notes.', 'curl can read mail over IMAP: curl imap://10.0.0.9/INBOX --user name:password', 'curl imap://10.0.0.9/INBOX --user backup:Backup2026!'],
   ssh: ['Credentials found earlier may be reused.', 'The FTP backup notes contain a username and password.', 'ssh admin@10.0.0.9, then ls and cat flag.txt']
 };
-const CMDS = ['help', 'nmap', 'ftp', 'smbclient', 'showmount', 'mount', 'dig', 'nc', 'snmpwalk', 'mysql', 'curl', 'ssh', 'ls', 'cat', 'submit', 'hint', 'status', 'capture', 'analyze', 'history', 'whoami', 'ifconfig', 'clear', 'reset'];
+const CMDS = ['help', 'nmap', 'ftp', 'smbclient', 'showmount', 'mount', 'dig', 'nc', 'snmpwalk', 'mysql', 'curl', 'ssh', 'ls', 'cat', 'submit', 'hint', 'status', 'capture', 'analyze', 'history', 'whoami', 'ifconfig', 'clear', 'reset', 'loot', 'debrief', 'explain'];
 
 // =====================================================================
 // Terminal
@@ -125,9 +125,21 @@ const store = { get: (k, d) => { try { const v = localStorage.getItem(k); return
 found = new Set(store.get('range', []).filter(f => FLAGS[f]));
 started = store.get('range-start', 0); finished = store.get('range-end', 0);
 hist = store.get('range-hist', []); hp = hist.length;
+let loot = store.get('range-loot', []);
 const save = () => { store.set('range', [...found]); store.set('range-start', started); store.set('range-end', finished); };
 
-const out = (x, c = '') => { const d = document.createElement('div'); d.textContent = x; d.className = c; t.appendChild(d); t.scrollTop = t.scrollHeight; };
+const out = (x, c = '') => { const d = document.createElement('div'); d.textContent = x; d.className = c; t.appendChild(d); t.scrollTop = t.scrollHeight; if (!c) collect(String(x)); };
+// write down anything useful that appears in normal output (hints are class 'd', so they never count)
+function collect(text) {
+  let added = 0;
+  for (const [re, fmt] of LOOT) { const m = text.match(re); if (m) { const item = fmt(m); if (!loot.includes(item)) { loot.push(item); added++; } } }
+  if (added) { store.set('range-loot', loot); lootPanel(); window.OV && OV.toast('Added to your loot notebook'); }
+}
+function lootPanel() {
+  const ul = $('#loot'); if (!ul) return;
+  $('#loot-n').textContent = loot.length ? loot.length + ' found' : '';
+  ul.innerHTML = loot.length ? loot.map(l => '<li>' + l.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])) + '</li>').join('') : '<li class="empty">Credentials and clues you uncover are written down here automatically.</li>';
+}
 const promptStr = () => ({ sh: 'attacker@kali:~$', ft: ft && ft.p === 'smb' ? 'smb: \\>' : 'ftp>', ssh: 'admin@files01:~$', sql: db ? 'mysql [' + db + ']>' : 'mysql>' })[mode];
 const setp = () => { pr.textContent = ask ? ask.q : promptStr(); inp.type = ask && ask.hide ? 'password' : 'text'; };
 const flushFtp = () => { if (fl) { sess(ft.port, fl); fl = null; } };
@@ -138,7 +150,7 @@ function panel() {
   $('#score').textContent = found.size + '/' + TOTAL;
   const ring = $('#ring'), C = 2 * Math.PI * 52;
   ring.style.strokeDasharray = C.toFixed(1); ring.style.strokeDashoffset = (C * (1 - found.size / TOTAL)).toFixed(1);
-  $('#flags').innerHTML = ORDER.map(s => '<li class="' + (done(s) ? 'on' : '') + '"><button type="button" data-run="hint ' + s + '" title="' + (done(s) ? s + ': captured' : 'hint for ' + s) + '"><b>' + s + '</b><span>' + (done(s) ? 'pwned' : PORTS[s] + (s === 'snmp' ? '/udp' : '/tcp')) + '</span></button></li>').join('');
+  $('#flags').innerHTML = ORDER.map(s => '<li class="' + (done(s) ? 'on' : '') + '"><button type="button" data-run="' + (done(s) ? 'debrief ' : 'hint ') + s + '" title="' + (done(s) ? s + ': captured, click for the debrief' : 'hint for ' + s) + '"><b>' + s + '</b><span>' + (done(s) ? 'pwned' : PORTS[s] + (s === 'snmp' ? '/udp' : '/tcp')) + '</span></button></li>').join('');
 }
 const fmtTime = ms => { const s = Math.floor(ms / 1000); return (s >= 3600 ? Math.floor(s / 3600) + 'h ' : '') + String(Math.floor(s / 60) % 60).padStart(2, '0') + 'm ' + String(s % 60).padStart(2, '0') + 's'; };
 setInterval(() => { $('#timer').textContent = !started ? 'not started' : fmtTime((finished || Date.now()) - started) + (finished ? ' (done)' : ''); $('#pkts').textContent = P.length.toLocaleString(); }, 500);
@@ -150,6 +162,7 @@ function sh(c, a) {
       out('services   ftp <ip>   smbclient -L //<ip> -N   mount -t nfs <ip>:<export> /mnt/nfs   snmpwalk -v2c -c <community> <ip>', 'd');
       out('           mysql -h <ip> -u <user> -p   curl <url>   ssh <user>@<ip>', 'd');
       out('loot       ls   cat <file>   submit FLAG{...}', 'd');
+      out('learn      explain <command>   debrief [service]   loot', 'd');
       out('game       hint [service]   status   capture   analyze   history   reset   clear', 'd');
       out('Tab completes, arrow keys walk your history.', 'c'); break;
     case 'whoami': out('attacker'); break;
@@ -271,6 +284,7 @@ function sh(c, a) {
       found.add(f); if (found.size === TOTAL) finished = Date.now(); save(); panel();
       out('Correct! [' + FLAGS[f] + '] Flags: ' + found.size + '/' + TOTAL, 'g');
       pop(FLAGS[f]);
+      brief(FLAGS[f], true);
       if (found.size === TOTAL) { out('\n  *** MISSION COMPLETE in ' + fmtTime(finished - started) + ' ***', 'win'); out('Now flip sides: type analyze to send your whole session to PacketStory and see your attack the way a defender would.\n', 'c'); setTimeout(win, 600); }
       break;
     }
@@ -278,6 +292,19 @@ function sh(c, a) {
       const s = ORDER.includes(a[0]) ? a[0] : ORDER.find(x => !done(x));
       if (!s) { out('All flags captured. Nothing left to hint.', 'g'); break; }
       const h = HINTS[s]; hc[s] = Math.min((hc[s] || 0) + 1, h.length); out('[' + s + '] hint ' + hc[s] + '/' + h.length + ': ' + h[hc[s] - 1], 'd'); break;
+    }
+    case 'loot': out(loot.length ? 'Loot notebook:\n' + loot.map(l => '  - ' + l).join('\n') : 'Nothing written down yet. Credentials and clues are saved here as you find them.', 'd'); break;
+    case 'debrief': {
+      const s = ORDER.includes(a[0]) ? a[0] : null;
+      if (s && !done(s)) { out('Capture the ' + s + ' flag first, then its debrief unlocks.', 'e'); break; }
+      const list = s ? [s] : ORDER.filter(done);
+      if (!list.length) { out('No debriefs yet. Each flag you submit unlocks one.', 'd'); break; }
+      list.forEach(x => brief(x, false)); break;
+    }
+    case 'explain': {
+      const e = EXPLAIN[a[0]];
+      if (!e) { out('usage: explain <command>   (' + Object.keys(EXPLAIN).join(', ') + ')', 'e'); break; }
+      out(a[0] + ': ' + e[0], 'c'); e.slice(1).filter(Boolean).forEach(l => out('  ' + l, 'd')); break;
     }
     case 'status': out('Flags: ' + found.size + '/' + TOTAL + '   packets captured: ' + P.length + '\n' + ORDER.map(s => (done(s) ? '[x] ' : '[ ] ') + s).join('\n'), 'd'); break;
     case 'capture': {
@@ -304,7 +331,7 @@ function sh(c, a) {
     case 'reset':
       ask = { q: 'Reset all progress and the capture? (yes/no)', cb: r => {
         if (r.toLowerCase() !== 'yes') { out('Cancelled.', 'd'); return; }
-        found = new Set(); started = finished = 0; P.length = 0; files = {}; mounted = false; hc = {}; save(); panel(); t.textContent = ''; intro();
+        found = new Set(); started = finished = 0; P.length = 0; files = {}; mounted = false; hc = {}; loot = []; store.set('range-loot', loot); save(); panel(); lootPanel(); t.textContent = ''; intro();
       } }; break;
     case 'clear': t.textContent = ''; break;
     case 'exit': out('You are already on your own machine. (Try clear or reset.)', 'd'); break;
@@ -370,7 +397,8 @@ function complete(v) {
   else if (mode === 'ssh') pool = first ? ['ls', 'cat', 'whoami', 'id', 'exit'] : Object.keys(HOME);
   else if (mode === 'sql') pool = ['show databases;', 'use app;', 'show tables;', 'select * from secrets;', 'exit'];
   else if (first) pool = CMDS;
-  else if (parts[0] === 'hint') pool = ORDER;
+  else if (parts[0] === 'hint' || parts[0] === 'debrief') pool = ORDER;
+  else if (parts[0] === 'explain') pool = Object.keys(EXPLAIN);
   else if (parts[0] === 'cat') pool = Object.keys(files).concat(mounted ? Object.keys(NFS).map(f => '/mnt/nfs/' + f) : []);
   else if (parts[0] === 'submit') pool = ['FLAG{'];
   else pool = [T, 'admin@' + T, '//' + T, 'corp.local', '@' + T];
@@ -449,6 +477,15 @@ if (window.OV) OV.register('Range', [
   { t: 'Mission briefing', i: 'file', c: '#ff4d6d', run: () => showModal('#brief') },
 ]);
 
-intro(); panel(); setp();
+function brief(s, short) {
+  const d = DEBRIEF[s]; if (!d) return;
+  out('  ── debrief: ' + d.title + ' (' + s + ') ──', 'm');
+  out('  What was wrong   ' + d.vuln, 'd');
+  out('  How to fix it    ' + d.fix, 'd');
+  out('  Defender sees    ' + d.seen, 'd');
+  out('  ATT&CK           ' + d.attack + (short ? '      (type debrief to read them all again)' : ''), 'd');
+}
+
+intro(); panel(); lootPanel(); setp();
 if (!store.get('range-briefed', 0) && !found.size) showModal('#brief');
 else if (matchMedia('(pointer: fine)').matches) inp.focus();

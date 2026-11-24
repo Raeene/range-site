@@ -95,3 +95,9 @@
 .r-fg { filter: none; }
 .modal-card { background: #0d1017; }
 .win-ic { box-shadow: none; }
+
+/* loot notebook */
+.loot { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 220px; overflow-y: auto; }
+.loot li { font: 12.5px/1.5 var(--mono); color: #e3e6ee; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: rgba(255, 255, 255, .02); word-break: break-word; animation: rise .5s var(--ease) both; }
+.loot li.empty { font: 13px/1.5 var(--sans); color: var(--dim); border-style: dashed; animation: none; }
+.rg-term .term-body .m { color: var(--violet); }

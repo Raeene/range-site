@@ -18,7 +18,7 @@
 <link rel="preload" href="/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fonts/space-grotesk.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/ds.css"><link rel="stylesheet" href="/range.css">
-<script src="/ds.js" defer></script><script src="/range.js" defer></script>
+<script src="/ds.js" defer></script><script src="/learn.js" defer></script><script src="/range.js" defer></script>
 </head>
 <body data-site="range">
 <a class="skip" href="#main">Skip to content</a>
@@ -85,6 +85,11 @@
         <ul class="flags" id="flags" aria-label="Flags by service"></ul>
       </div>
 
+      <div class="side-card">
+        <div class="side-h"><h2>Loot notebook</h2><span class="dim" id="loot-n"></span></div>
+        <ul class="loot" id="loot" aria-live="polite"></ul>
+      </div>
+
       <div class="side-card acts">
         <button class="btn btn-primary" type="button" data-run="analyze"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>Analyze in PacketStory<svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
         <div class="acts-row">
@@ -115,6 +120,7 @@
     <ul class="brief-list">
       <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 17 6-6-6-6M12 19h8"/></svg><span>Start with recon: <code>nmap 10.0.0.9</code></span></li>
       <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg><span>Stuck? <code>hint</code> gives progressive nudges, and you can click any flag tile.</span></li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5a2 2 0 0 1 2-2h14v16H6a2 2 0 0 0-2 2zm0 0a2 2 0 0 0 2 2h14"/></svg><span>New to a tool? <code>explain nmap</code>. Every flag unlocks a <b>debrief</b>: what was wrong, how to fix it, what a defender sees.</span></li>
       <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 3 4 14h7l-1 7 9-11h-7z"/></svg><span><kbd>Tab</kbd> completes, <kbd>&uarr;</kbd> <kbd>&darr;</kbd> walk your history. Progress is saved in your browser.</span></li>
     </ul>
     <div class="row"><button class="btn btn-primary" type="button" id="brief-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 5v14l11-7z"/></svg>Start the mission</button></div>
