@@ -87,3 +87,11 @@
 .nf .code { font: 700 clamp(120px, 26vw, 280px)/.85 var(--display); letter-spacing: -.06em; margin-bottom: 24px; }
 .nf .lead { margin: 0 auto 36px; }
 .nf .row { justify-content: center; }
+
+/* v2.1 */
+.rg-term { box-shadow: 0 40px 120px -40px rgba(0, 0, 0, .9); }
+.rg-term::before { display: none; }
+.flags .on button { background: rgba(255, 77, 109, .12); box-shadow: none; }
+.r-fg { filter: none; }
+.modal-card { background: #0d1017; }
+.win-ic { box-shadow: none; }
